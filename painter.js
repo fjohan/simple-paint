@@ -17,10 +17,11 @@ class Painter {
     this.cancel();
     const generation = this.generation;
     const { width, height } = source;
+    const isSkagen = style === 'skagen';
     this.canvas.width = width;
     this.canvas.height = height;
     const ctx = this.context;
-    ctx.fillStyle = '#f4efe2';
+    ctx.fillStyle = isSkagen ? '#e8e7de' : '#f4efe2';
     ctx.fillRect(0, 0, width, height);
     onProgress(0, 'Laying down the first colors', null);
 
@@ -36,7 +37,7 @@ class Painter {
     fieldCanvas.width = fieldWidth;
     fieldCanvas.height = fieldHeight;
     const fieldContext = fieldCanvas.getContext('2d', { willReadFrequently: true });
-    fieldContext.filter = 'blur(1px)';
+    fieldContext.filter = isSkagen ? 'blur(1.5px)' : 'blur(1px)';
     fieldContext.drawImage(source, 0, 0, fieldWidth, fieldHeight);
     const field = fieldContext.getImageData(0, 0, fieldWidth, fieldHeight).data;
     const luminance = (x, y) => {
@@ -61,7 +62,7 @@ class Painter {
     };
 
     const detailScale = 1.45 - detail / 125;
-    const styleScale = style === 'impressionist' ? 1.22 : style === 'watercolor' ? 1.18 : 1;
+    const styleScale = isSkagen ? 1.12 : style === 'impressionist' ? 1.22 : style === 'watercolor' ? 1.18 : 1;
     const radii = [scale / 32, scale / 65, scale / 140, scale / 260].map((r, i) => Math.max(1.2, r * (i ? detailScale : 1) * styleScale));
     const strokes = [];
     const phaseNames = ['Laying down the first colors', 'Finding the shapes', 'Bringing the details to life', 'A few finishing touches'];
@@ -76,8 +77,8 @@ class Painter {
           const y = Math.max(0, Math.min(height - 1, gy + (Math.random() - .5) * step * .8));
           const fi = gradientAt(x, y);
           // Keep quiet regions expressive; reserve the smallest marks for edges.
-          if (pass === 2 && gradients[fi + 1] < 7 && Math.random() > .38) continue;
-          if (pass === 3 && (gradients[fi + 1] < 11 || Math.random() > .55)) continue;
+          if (pass === 2 && gradients[fi + 1] < (isSkagen ? 10 : 7) && Math.random() > (isSkagen ? .26 : .38)) continue;
+          if (pass === 3 && (gradients[fi + 1] < (isSkagen ? 16 : 11) || Math.random() > (isSkagen ? .42 : .55))) continue;
           layer.push({ x, y, radius, pass, fi });
         }
       }
@@ -97,17 +98,29 @@ class Painter {
     const drawStroke = stroke => {
       const { x, y, radius, pass, fi } = stroke;
       let [r, g, b] = colorAt(x, y);
-      const jitter = (Math.random() - .5) * (style === 'impressionist' ? 23 : 9);
+      const lightness = (r * .299 + g * .587 + b * .114) / 255;
+      const warmSubject = r > g * 1.08 && g > b * 1.05;
+      const jitter = (Math.random() - .5) * (isSkagen ? 12 : style === 'impressionist' ? 23 : 9);
       const average = (r + g + b) / 3;
-      const saturation = style === 'impressionist' ? 1.2 : 1.04;
+      const saturation = isSkagen ? .88 : style === 'impressionist' ? 1.2 : 1.04;
       const paper = style === 'watercolor' ? .09 : 0;
       const pigment = value => Math.round(Math.max(0, Math.min(255, (average + (value - average) * saturation + jitter) * (1 - paper) + 245 * paper)));
       r = pigment(r); g = pigment(g); b = pigment(b);
+      if (isSkagen) {
+        // A Krøyer-inspired interpretation: pearl-colored air, cool shadows,
+        // and warm light. Weight by tone, rather than tinting the whole photo blue.
+        const shadow = Math.pow(1 - lightness, 1.6) * (warmSubject ? .45 : 1);
+        const light = Math.pow(Math.max(0, (lightness - .45) / .55), 1.3);
+        const clamp = value => Math.round(Math.max(0, Math.min(255, value)));
+        r = clamp(r * .95 + 9 - shadow * 5 + light * 8);
+        g = clamp(g * .95 + 10 + shadow * 2 + light * 6);
+        b = clamp(b * .95 + 12 + shadow * 18 - light * 12);
+      }
       const rgb = `rgb(${r},${g},${b})`;
       let angle = gradients[fi + 1] > 3 ? gradients[fi] : -.45;
-      angle += (Math.random() - .5) * .65;
+      angle += (Math.random() - .5) * (isSkagen ? .35 : .65);
       if (style === 'impressionist') angle = Math.round(angle / .55) * .55;
-      const length = radius * (style === 'impressionist' ? 1.8 : style === 'watercolor' ? 3.3 : 3.2) * (.7 + Math.random() * .6);
+      const length = radius * (isSkagen ? 2.6 : style === 'impressionist' ? 1.8 : style === 'watercolor' ? 3.3 : 3.2) * (.7 + Math.random() * .6);
       const points = [{ x: x - Math.cos(angle) * length * .45, y: y - Math.sin(angle) * length * .45 }];
       let px = points[0].x;
       let py = points[0].y;
@@ -124,7 +137,7 @@ class Painter {
         if (pass > 0 && j > 1) {
           const c = colorAt(px, py);
           const start = colorAt(x, y);
-          if (Math.abs(c[0] - start[0]) + Math.abs(c[1] - start[1]) + Math.abs(c[2] - start[2]) > 160) break;
+          if (Math.abs(c[0] - start[0]) + Math.abs(c[1] - start[1]) + Math.abs(c[2] - start[2]) > (isSkagen ? 135 : 160)) break;
         }
         points.push({ x: px, y: py });
       }
@@ -141,11 +154,11 @@ class Painter {
         ctx.stroke();
       };
       ctx.strokeStyle = rgb;
-      ctx.globalAlpha = style === 'watercolor' ? (pass === 0 ? .64 : .43) : .91;
+      ctx.globalAlpha = style === 'watercolor' ? (pass === 0 ? .64 : .43) : isSkagen ? .84 : .91;
       ctx.lineWidth = radius * (1.75 + Math.random() * .45);
       path();
       if (style !== 'watercolor') {
-        ctx.globalAlpha = style === 'oil' ? .24 : .16;
+        ctx.globalAlpha = style === 'oil' ? .24 : isSkagen ? .12 : .16;
         ctx.lineWidth = Math.max(.6, radius * .16);
         ctx.strokeStyle = `rgb(${Math.min(255, r + 27)},${Math.min(255, g + 25)},${Math.min(255, b + 20)})`;
         path(-radius * .4);

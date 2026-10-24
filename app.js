@@ -2,11 +2,12 @@ const $ = id => document.getElementById(id);
 const painting = $('painting');
 const original = $('original');
 const painter = new Painter(painting);
-const styleNames = { oil: 'Oil paint', watercolor: 'Watercolor', impressionist: 'Impressionist' };
+const styleNames = { oil: 'Oil paint', watercolor: 'Watercolor', impressionist: 'Impressionist', skagen: 'Skagen · Krøyer' };
 const descriptions = {
   oil: 'Rich color. Tangible texture. A timeless feel.',
   watercolor: 'Soft washes. Gentle edges. A lighter touch.',
-  impressionist: 'Lively strokes. Vibrant color. A new impression.'
+  impressionist: 'Lively strokes. Vibrant color. A new impression.',
+  skagen: 'Pearl light. Blue-violet shadows. Quiet coastal color.'
 };
 let source = null;
 let imageName = 'alpine-afternoon';
