@@ -17,7 +17,10 @@ class Painter {
     this.cancel();
     const generation = this.generation;
     const { width, height } = source;
-    const isSkagen = style === 'skagen';
+    const isTexturedSkagen = style === 'textured-skagen';
+    const isSkagen = style === 'skagen' || isTexturedSkagen;
+    const isTexturedOil = style === 'textured-oil';
+    const isOil = style === 'oil' || isTexturedOil;
     this.canvas.width = width;
     this.canvas.height = height;
     const ctx = this.context;
@@ -156,17 +159,34 @@ class Painter {
       ctx.strokeStyle = rgb;
       ctx.globalAlpha = style === 'watercolor' ? (pass === 0 ? .64 : .43) : isSkagen ? .84 : .91;
       ctx.lineWidth = radius * (1.75 + Math.random() * .45);
+      const strokeWidth = ctx.lineWidth;
+      if (isTexturedOil && radius >= 2.4) {
+        const width = ctx.lineWidth;
+        // A narrower body lets individual bristle ends define the silhouette.
+        ctx.lineWidth = width * .8;
+        path();
+        const seed = Math.imul(Math.round(x * 16), 73856093) ^ Math.imul(Math.round(y * 16), 19349663) ^ (pass + 1);
+        this.addOilBristles(points, width, [r, g, b], seed);
+        return;
+      }
       path();
       if (style !== 'watercolor') {
-        ctx.globalAlpha = style === 'oil' ? .24 : isSkagen ? .12 : .16;
+        ctx.globalAlpha = isOil ? .24 : isSkagen ? .12 : .16;
         ctx.lineWidth = Math.max(.6, radius * .16);
         ctx.strokeStyle = `rgb(${Math.min(255, r + 27)},${Math.min(255, g + 25)},${Math.min(255, b + 20)})`;
         path(-radius * .4);
-        if (style === 'oil' && radius > 3) {
+        if (isOil && radius > 3) {
           ctx.globalAlpha = .15;
           ctx.strokeStyle = `rgb(${Math.max(0, r - 20)},${Math.max(0, g - 20)},${Math.max(0, b - 20)})`;
           path(radius * .35);
         }
+      }
+      if (isTexturedSkagen && radius >= 3.5 && pass < 3) {
+        // Keep the full Skagen stroke beneath soft ribbons. Quiet areas receive
+        // much less texture; the smallest finishing marks remain undisturbed.
+        const structure = Math.max(0, Math.min(1, (gradients[fi + 1] - 2) / 22));
+        const seed = Math.imul(Math.round(x * 16), 73856093) ^ Math.imul(Math.round(y * 16), 19349663) ^ (pass + 1);
+        this.addOilBristles(points, strokeWidth, [r, g, b], seed, { soft: true, strength: .2 + structure * .8 });
       }
     };
 
@@ -193,6 +213,55 @@ class Painter {
       };
       this.frame = requestAnimationFrame(frame);
     });
+  }
+
+  addOilBristles(points, width, color, seed, { soft = false, strength = 1 } = {}) {
+    const ctx = this.context;
+    // A separate random stream preserves oil's stroke plan, colors and timing:
+    // changing the bristles must not change the next stroke's shape or pigment.
+    let state = seed >>> 0;
+    const random = () => {
+      state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+      return state / 4294967296;
+    };
+    const normals = points.map((point, i) => {
+      const before = points[Math.max(0, i - 1)];
+      const after = points[Math.min(points.length - 1, i + 1)];
+      const dx = after.x - before.x;
+      const dy = after.y - before.y;
+      const length = Math.hypot(dx, dy) || 1;
+      return { x: -dy / length, y: dx / length };
+    });
+    // More ribbons on broad marks; cap the cost and keep fine marks simple.
+    const count = Math.max(3, Math.min(soft ? 5 : 8, Math.round(width / 4)));
+    const clamp = value => Math.max(0, Math.min(255, Math.round(value)));
+    for (let band = 0; band < count; band++) {
+      const across = ((band + .5) / count - .5) + (random() - .5) * .3 / count;
+      const offset = across * width * (soft ? .84 : .98);
+      const ribbon = points.map((point, i) => ({
+        x: point.x + normals[i].x * offset,
+        y: point.y + normals[i].y * offset
+      }));
+      const last = ribbon.length - 1;
+      const edge = Math.abs(across) * 2;
+      const startTrim = (soft ? .03 + edge * .15 : .06 + edge * .4) * random();
+      const endTrim = (soft ? .03 + edge * .15 : .06 + edge * .4) * random();
+      ribbon[0].x += (ribbon[1].x - ribbon[0].x) * startTrim;
+      ribbon[0].y += (ribbon[1].y - ribbon[0].y) * startTrim;
+      ribbon[last].x += (ribbon[last - 1].x - ribbon[last].x) * endTrim;
+      ribbon[last].y += (ribbon[last - 1].y - ribbon[last].y) * endTrim;
+      const shade = (random() - .5) * (soft ? 16 : 44);
+      ctx.strokeStyle = `rgb(${color.map(channel => clamp(channel + shade + (random() - .5) * (soft ? 2 : 5))).join(',')})`;
+      ctx.globalAlpha = (soft ? .15 + random() * .15 : .5 + random() * .32) * strength;
+      ctx.lineWidth = Math.max(.55, width / count * (soft ? .8 + random() * .25 : .65 + random() * .3));
+      ctx.beginPath();
+      ctx.moveTo(ribbon[0].x, ribbon[0].y);
+      for (let i = 1; i < last; i++) {
+        ctx.quadraticCurveTo(ribbon[i].x, ribbon[i].y, (ribbon[i].x + ribbon[i + 1].x) / 2, (ribbon[i].y + ribbon[i + 1].y) / 2);
+      }
+      ctx.lineTo(ribbon[last].x, ribbon[last].y);
+      ctx.stroke();
+    }
   }
 
   addPaperTexture(width, height) {
