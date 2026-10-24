@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ec">
+  <meta name="description" content="Turn a photo into a little work of art. Watch real canvas brushstrokes build your painting in seconds, right in your browser.">
+  <title>Brushwork — Your photo, a little more painterly.</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='16' fill='%232f5147'/%3E%3Cpath d='M18 44C26 48 45 24 46 17C38 17 17 37 18 44Z' fill='%23f5f3ec'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="painter.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <svg class="icon-definitions" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m-4 4 4-4 4 4M4 15v4a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-4"/></symbol>
+    <symbol id="i-brush" viewBox="0 0 24 24"><path d="m14 7 3 3M9 14 19 4c2-2 4 0 2 2L11 16M10 15c-6-3-4 6-8 5 5 3 11 0 8-5Z"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-5-5 5 5-5 5"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-4-4 4 4 4-4M4 16v4h16v-4"/></symbol>
+    <symbol id="i-replay" viewBox="0 0 24 24"><path d="M4 10a8 8 0 1 1 1 8M4 4v6h6"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v5c0 5-8 10-8 10S4 16 4 11V6l8-3Z"/><path d="m8 11 3 3 5-5"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="m3 17 6-6 5 5 3-3 4 4"/><circle cx="15.5" cy="8" r="1.5"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+  </defs></svg>
+
+  <header class="site-header">
+    <a class="wordmark" href="./" aria-label="Brushwork home"><svg class="brand-mark" viewBox="0 0 36 36" aria-hidden="true"><path d="M8 29C7 20 22 5 29 5c0 8-15 23-21 24Z" fill="currentColor"/><path d="m10 28 14-17" stroke="#f5f3ec" stroke-width="1.2"/></svg>brushwork<span class="wordmark-dot">.</span></a>
+    <span class="header-caption">A LITTLE MORE HUMAN. A LITTLE MORE ART.</span>
+    <button id="about-button" class="text-button about-button">How it works <span aria-hidden="true">↗</span></button>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow"><span class="little-spark" aria-hidden="true">✳</span> EVERY PHOTO HAS A PAINTING IN IT</div>
+      <h1 id="page-title">Your photo. <em>A new feeling.</em></h1>
+      <p>A few thousand brushstrokes. A few seconds. A little work of art, made from your moment.</p>
+    </section>
+
+    <div class="studio">
+      <aside class="controls" aria-label="Painting controls">
+        <div class="control-section photo-section">
+          <div class="section-heading"><span class="step-number">01</span><h2>Pick a moment</h2></div>
+          <label class="upload-zone" id="upload-zone" for="photo-input" tabindex="0">
+            <span class="upload-icon">
+              <svg class="icon" id="upload-glyph"><use href="#i-upload"/></svg>
+              <canvas id="upload-preview" width="72" height="72" aria-hidden="true" hidden></canvas>
+              <span class="upload-ready" id="upload-ready" aria-hidden="true" hidden><svg class="icon"><use href="#i-check"/></svg></span>
+            </span>
+            <strong>Open a photo <span aria-hidden="true">↗</span></strong>
+            <span class="upload-hint" id="photo-filename">or drop it right here</span>
+            <span class="file-types" id="photo-status" role="status">JPG, PNG, WEBP & MORE</span>
+          </label>
+          <input id="photo-input" type="file" accept="image/*" class="visually-hidden">
+          <button id="demo-button" class="demo-button"><span>Just looking?</span> Try our sample <span aria-hidden="true">↗</span></button>
+        </div>
+
+        <div class="control-section">
+          <div class="section-heading"><span class="step-number">02</span><h2>Find your style</h2></div>
+          <fieldset class="style-options"><legend class="visually-hidden">Painting style</legend>
+            <label class="style-option"><input type="radio" name="style" value="oil" checked><span class="style-card"><span class="style-art oil-art" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="style-name">Oil paint</span><span class="selected-tick"><svg class="icon"><use href="#i-check"/></svg></span></span></label>
+            <label class="style-option"><input type="radio" name="style" value="watercolor"><span class="style-card"><span class="style-art watercolor-art" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="style-name">Watercolor</span><span class="selected-tick"><svg class="icon"><use href="#i-check"/></svg></span></span></label>
+            <label class="style-option"><input type="radio" name="style" value="impressionist"><span class="style-card"><span class="style-art impressionist-art" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="style-name">Impressionist</span><span class="selected-tick"><svg class="icon"><use href="#i-check"/></svg></span></span></label>
+          </fieldset>
+          <p class="style-description" id="style-description">Rich color. Tangible texture. A timeless feel.</p>
+        </div>
+
+        <div class="control-section details-section">
+          <div class="section-heading"><span class="step-number">03</span><h2>Make it yours</h2></div>
+          <label class="slider-label" for="detail">Brush detail <span id="detail-value">Balanced</span></label>
+          <input type="range" id="detail" min="0" max="100" value="50">
+          <div class="range-captions"><span>Loose & expressive</span><span>Fine & detailed</span></div>
+          <div class="speed-row"><span>Painting time</span><fieldset class="time-options"><legend class="visually-hidden">Painting duration</legend><label><input type="radio" name="duration" value="3000"><span>3s</span></label><label><input type="radio" name="duration" value="5000" checked><span>5s</span></label><label><input type="radio" name="duration" value="8000"><span>8s</span></label></fieldset></div>
+        </div>
+        <button id="paint-button" class="primary-button" disabled><svg class="icon"><use href="#i-brush"/></svg><span>Make a little art</span><svg class="icon button-arrow"><use href="#i-arrow"/></svg></button>
+        <p class="controls-footnote">No sign-up. No uploads. Just you and your photo.</p>
+      </aside>
+
+      <section class="canvas-panel" aria-label="Painting workspace">
+        <div class="canvas-toolbar"><div class="canvas-label"><span class="status-dot"></span> YOUR CANVAS</div><div class="view-switch" role="group" aria-label="Canvas view"><button id="painting-view" class="active" aria-pressed="true">Painting</button><button id="original-view" aria-pressed="false">Original</button></div></div>
+        <div class="canvas-space" id="canvas-space" aria-busy="true">
+          <div class="artwork" id="artwork">
+            <canvas id="painting" width="1200" height="900" aria-label="Your photo recreated with simulated brushstrokes"></canvas>
+            <canvas id="original" width="1200" height="900" aria-label="Original photo" hidden></canvas>
+            <div class="loading-message" id="loading-message"><span class="loading-flower">✳</span>Getting the easel ready…</div>
+            <div class="brush-cursor" id="brush-cursor" hidden><svg viewBox="0 0 48 48" aria-hidden="true"><path d="m16 31 19-27c2-3 7 1 5 4L20 34Z" fill="#ae7349"/><path d="m16 29 6 4-4 6-6-4Z" fill="#b9beb2"/><path d="M12 34c-3 2-1 8-6 10 8 1 14-4 12-7Z" fill="#354e41"/></svg></div>
+          </div>
+          <span class="canvas-corner corner-tl" aria-hidden="true"></span><span class="canvas-corner corner-br" aria-hidden="true"></span>
+        </div>
+        <div class="painting-progress" id="progress-track" role="progressbar" aria-label="Painting progress" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><div id="progress-fill"></div></div>
+        <div class="canvas-footer"><div class="painting-info"><span class="painting-status" id="painting-status" role="status">A fresh canvas. Endless possibilities.</span><span class="painting-meta" id="painting-meta">Your next little masterpiece starts here.</span></div><div class="canvas-actions"><button class="replay-button" id="replay-button" disabled title="Replay painting"><svg class="icon"><use href="#i-replay"/></svg><span>Replay</span></button><button id="download-button" class="download-button" disabled><svg class="icon"><use href="#i-download"/></svg><span>Save painting</span></button></div></div>
+      </section>
+    </div>
+
+    <div class="below-studio"><span class="handwritten">A moment, reimagined.</span><p><svg class="icon"><use href="#i-shield"/></svg> Your photos stay yours. Everything happens on your device.</p><span class="made-with">MADE FOR THE JOY OF MAKING</span></div>
+  </main>
+  <footer class="site-footer"><span>Less perfect. More personal.</span><span>That's the beauty of brushwork<span class="wordmark-dot">.</span></span></footer>
+
+  <dialog id="about-dialog"><button class="close-button" id="close-about" aria-label="Close"><svg class="icon"><use href="#i-close"/></svg></button><span class="eyebrow">A LITTLE DIGITAL ALCHEMY</span><h2>From pixels<br>to paint.</h2><p>Open a photo, pick a style, and watch it take shape. A simulated brush samples colors from your photo and follows its contours, building from broad washes to small, expressive details.</p><p>Every mark is drawn on a canvas in your browser. Your photo never leaves your device.</p><p>Play with the brush detail, try another style, or save your favorite as a PNG. Every painting is a little different.</p><button id="back-to-studio" class="primary-button">Let's make something <svg class="icon"><use href="#i-arrow"/></svg></button></dialog>
+  <div class="toast" id="toast" role="alert" hidden></div>
+</body>
+</html>
